@@ -1,0 +1,29 @@
+//seleccionamos el paquete de imagenes
+var landsat8 = ee.ImageCollection("LANDSAT/LC08/C02/T1_RT_TOA"),
+point = /*color:#0b4a8b */ ee.Geometry.Point([-57.5812, -25.2713]);
+//seleccionamos la imagen que no tenga nubes asignamos el rango de fecha 
+var image = ee.Image(landsat8
+  .filterBounds(point)
+  .filterDate('2020-01-01', '2020-12-30')
+  .sort('CLOUD_COVER')
+  .first());
+//definimos parametros de visualizacion utilizando bandas b4,b3,b2. rojo, verde, azul
+var vizParams ={
+  bands:['B4','B3','B2'],
+  min: 0,
+  max:0.5,
+  gamma:[0.95,1.1,0.8]
+  
+};
+//agregar vista del mapa
+Map.addLayer(image, vizParams, 'compuesto de falso color');
+var ndwiViz = {min: 0.5, max:1, palette:['#00FFFF','#0000FF']};
+//vusualizacion de capas 
+var imageRGB=image.visualize({bands:['B4','B3','B2'],max:0.6});
+//mosaico de las capas de visualizacion o exportar
+var mosaic = ee.ImageCollection([imageRGB]).mosaic();
+Map.addLayer(mosaic, {}, 'mosaico');
+//exportamos
+Export.image.toDrive({image: mosaic.select(['B4','B3','B2']),description: 'Mosaico_Landsat2020_',fileNamePrefix:'Mosaico:Landsat8',
+scale:30,'region':point,maxPixels: 1e12,});
+//el CLIP se guardara en Google drive donde la podras descargar
